@@ -2,13 +2,8 @@ import {NativeStackScreenProps} from '@react-navigation/native-stack';
 
 export type RootStackPramrsList = {
   QuestionScreen: undefined;
-  NumberListScreen: {
-    questionId: number;
-  };
-  AnswerScreen: {
-    questionId: number;
-    itemNumber: string;
-  };
+  NumberListScreen: undefined;
+  AnswerScreen: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackPramrsList> =

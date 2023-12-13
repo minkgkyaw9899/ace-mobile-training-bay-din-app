@@ -1,11 +1,11 @@
 /* eslint-disable react-native/no-inline-styles */
 import {FlatList, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import React, {FC, useDeferredValue, useEffect, useState} from 'react';
+import Data from '@/app.json';
 import {RootStackScreenProps} from 'navigations/type';
 import {useNavigation} from '@react-navigation/native';
 import {addQuestionData} from 'features/bay-din/bayDingSlice';
 import {useAppDispatch} from 'app/hook';
-import axios from 'axios';
 
 type RenderItem = {
   item: {
@@ -37,53 +37,21 @@ const QuestionListItem: FC<RenderItem> = ({item}) => {
 };
 
 const QuestionScreen = () => {
-  // const {data, error} = useQuery({
-  //   queryKey: ['question'],
-  //   queryFn: async () => {
-  //     try {
-  //       const res = await axios.get('http://10.1.40.191:3000/questions');
-  //       return res.data;
-  //     } catch (err) {
-  //       console.log(err);
-  //       throw err;
-  //     }
-  //   },
-  // });
-
-  useEffect(() => {
-    // console.log(error?.message);
-    const fetchData = async () => {
-      try {
-        const res = await axios.get('http://10.1.40.191:3000/questions', {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        console.log(res.data);
-      } catch (err) {
-        if (err) {
-          console.log(err);
-        }
-      }
-    };
-    fetchData();
-  }, []);
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [filterQsList, setFilterQsList] = useState([]);
+  const [filterQsList, setFilterQsList] = useState(Data.questions);
 
   const [value, setValue] = useState('');
 
   const query = useDeferredValue(value);
 
   useEffect(() => {
-    // if (query.trim() !== '') {
-    //   const filteredList = Data.questions.filter(
-    //     qs => qs.questionName.includes(query) && qs,
-    //   );
-    //   return setFilterQsList(filteredList);
-    // }
-    // setFilterQsList(Data.questions);
+    if (query.trim() !== '') {
+      const filteredList = Data.questions.filter(
+        qs => qs.questionName.includes(query) && qs,
+      );
+
+      return setFilterQsList(filteredList);
+    }
+    setFilterQsList(Data.questions);
   }, [query]);
 
   return (
@@ -97,7 +65,7 @@ const QuestionScreen = () => {
       />
       <FlatList
         data={filterQsList}
-        // keyExtractor={item => item.questionNo.toString()}
+        keyExtractor={item => item.questionNo.toString()}
         renderItem={({item}) => <QuestionListItem item={item} />}
         // eslint-disable-next-line react/no-unstable-nested-components
         ItemSeparatorComponent={() => <View style={{marginVertical: 16}} />}
