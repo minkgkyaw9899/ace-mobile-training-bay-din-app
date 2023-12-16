@@ -1,11 +1,16 @@
 /* eslint-disable react-native/no-inline-styles */
-import {FlatList, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {FlatList, RefreshControl, Text, TextInput, TouchableOpacity, View} from 'react-native';
 import React, {FC, useDeferredValue, useEffect, useState} from 'react';
 import {RootStackScreenProps} from 'navigations/type';
 import {useNavigation} from '@react-navigation/native';
 import {addQuestionData} from 'features/bay-din/bayDingSlice';
 import {useAppDispatch} from 'app/hook';
-import axios from 'axios';
+import axios, {AxiosResponse} from 'axios';
+import {
+  QueryFunctionContext,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query';
 
 type RenderItem = {
   item: {
@@ -36,56 +41,46 @@ const QuestionListItem: FC<RenderItem> = ({item}) => {
   );
 };
 
-const QuestionScreen = () => {
-  // const {data, error} = useQuery({
-  //   queryKey: ['question'],
-  //   queryFn: async () => {
-  //     try {
-  //       const res = await axios.get('http://10.1.40.191:3000/questions');
-  //       return res.data;
-  //     } catch (err) {
-  //       console.log(err);
-  //       throw err;
-  //     }
-  //   },
-  // });
+type Question = {
+  questionNo: number;
+  questionName: string;
+};
 
-  useEffect(() => {
-    // console.log(error?.message);
-    const fetchData = async () => {
-      try {
-        const res = await axios.get('http://10.1.40.191:3000/questions', {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        console.log(res.data);
-      } catch (err) {
-        if (err) {
-          console.log(err);
-        }
-      }
-    };
-    fetchData();
-  }, []);
+const QuestionScreen = () => {
+
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [filterQsList, setFilterQsList] = useState([]);
+  const [questionList, setQuestionList] = useState<Question[]>([])
 
   const [value, setValue] = useState('');
 
   const query = useDeferredValue(value);
 
-  useEffect(() => {
-    // if (query.trim() !== '') {
-    //   const filteredList = Data.questions.filter(
-    //     qs => qs.questionName.includes(query) && qs,
-    //   );
-    //   return setFilterQsList(filteredList);
-    // }
-    // setFilterQsList(Data.questions);
-  }, [query]);
+  const {data, hasNextPage, fetchNextPage, isFetchingNextPage, refetch, isFetching} = useInfiniteQuery({
+    queryKey: ['questions'],
+    queryFn:  async ({ pageParam }) => {
+    const res: AxiosResponse<Question[]> = await axios.get(`http://10.1.40.98:3000/questions?_page=${pageParam}&_limit=10`)
+      let currentPage = pageParam
+      let lastPage = 7;
+      let nextPage = currentPage < lastPage ? currentPage + 1 : null;
+      return {
+        resData: res.data,
+        nextPage
+    }
+  },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+  })
 
+  useEffect(() => {
+    if (data) {
+      console.log(data)
+      data.pages.map(res => setQuestionList(prev => ([...prev, ...res.resData])))
+    }
+  }, [data])
+
+  
   return (
     <View style={{flex: 1, backgroundColor: 'black'}}>
       <TextInput
@@ -96,7 +91,12 @@ const QuestionScreen = () => {
         placeholder="Text something"
       />
       <FlatList
-        data={filterQsList}
+        // onRefresh={refetch}
+        // refreshing={isFetching}
+        // refreshControl={<RefreshControl refreshing={isFetching} colors={['red', 'blue', 'green', 'white']} onRefresh={refetch} />}
+        ListFooterComponent={() => isFetchingNextPage && <View style={{paddingBottom: 100}}><Text style={{color: 'green', fontSize: 40}}>Fetching next page ...</Text></View>}
+        onEndReached={() => hasNextPage && fetchNextPage()}
+        data={questionList}
         // keyExtractor={item => item.questionNo.toString()}
         renderItem={({item}) => <QuestionListItem item={item} />}
         // eslint-disable-next-line react/no-unstable-nested-components
